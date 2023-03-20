@@ -1,0 +1,65 @@
+version: "3.8"
+services:
+  nats:
+    image: 'nats:latest'
+    networks:
+      - network
+
+  postgres:
+    image: 'postgres:latest'
+    environment:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpassword
+    networks:
+      - network
+    volumes:
+      - postgres-data:/var/lib/postgresql/data/
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - 81:80
+    depends_on:
+      - postgres
+    networks:
+      - network
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin/
+
+  service:
+    build: ./service
+    environment:
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_USER: testuser
+      PG_PASSWORD: testpassword
+      PG_NAME: postgres
+      NATS_URI: 'nats://nats:4222'
+    ports:
+      - 80:80
+    depends_on:
+      - nats
+      - postgres
+    networks:
+      - network
+
+  publisher:
+    build: ./publisher
+    environment:
+      NATS_URI: 'nats://nats:4222'
+    depends_on:
+      - nats
+    networks:
+      - network
+
+volumes:
+  postgres-data:
+
+  pgadmin-data:
+
+networks:
+  network:
+    driver: bridge
